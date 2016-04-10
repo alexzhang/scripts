@@ -1,0 +1,43 @@
+#!/bin/bash
+# binaescrypt - a script to encrypt/decrypt files using OpenSSL
+# rev. 0.9.1 4/10/2016
+
+show_usage () {
+  echo "usage: binaescrypt [-d] <infile> <outfile>" 1>&2
+}
+
+PNAME=`basename $0`
+
+if [[ "$PNAME" != "binaescrypt" ]]; then
+  show_usage
+  exit 1;
+fi
+
+if [[ "$1" == "-d" ]]; then
+  DECRYPT="YES"
+  IFNAME=$2
+  OFNAME=$3
+else
+  DECRYPT="NO"
+  IFNAME=$1
+  OFNAME=$2
+fi
+
+# echo "[DEBUG]" IFNAME is "$IFNAME"
+# echo "[DEBUG]" OFNAME is "$OFNAME"
+
+if [[ -z "$IFNAME" ]] || [[ -z "$OFNAME" ]]; then
+  show_usage
+  exit 1;
+fi
+
+if [[ "$IFNAME" = "$OFNAME" ]]; then
+  echo "error: input file and output file cannot be the same file" 1>&2
+  exit 1;
+fi
+
+if [ "$DECRYPT" = "NO" ]; then
+  openssl aes-256-cbc -salt -in "$IFNAME" -out "$OFNAME"
+else
+  openssl aes-256-cbc -d -in "$IFNAME" -out "$OFNAME"
+fi

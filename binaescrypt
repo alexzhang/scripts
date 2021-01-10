@@ -1,6 +1,5 @@
 #!/bin/bash
 # binaescrypt - a script to encrypt/decrypt files using OpenSSL
-# rev. 0.9.1 4/10/2016
 
 show_usage () {
   echo "usage: binaescrypt [-d] <infile> <outfile>" 1>&2
@@ -37,7 +36,7 @@ if [[ "$IFNAME" = "$OFNAME" ]]; then
 fi
 
 if [ "$DECRYPT" = "NO" ]; then
-  openssl aes-256-cbc -salt -in "$IFNAME" -out "$OFNAME"
+  openssl aes-256-cbc -md sha512 -pbkdf2 -iter 100000 -salt -in "$IFNAME" -out "$OFNAME"
 else
-  openssl aes-256-cbc -d -in "$IFNAME" -out "$OFNAME"
+  openssl aes-256-cbc -d -md sha512 -pbkdf2 -iter 100000 -salt -in "$IFNAME" -out "$OFNAME"
 fi

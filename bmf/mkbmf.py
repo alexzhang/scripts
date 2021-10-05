@@ -24,6 +24,9 @@ else:
     print(f"\033[91m{script}: error: unable to enumerate files\033[0m", file=sys.stderr)
     sys.exit(1)
 
+s_files = sorted(files, key=lambda file: (os.path.dirname(file), os.path.basename(file)))
+print(f"\033[93msorted {len(s_files)} files\033[0m", file=sys.stderr)
+
 ### START OUTPUT ###
 
 print("%%%% MKBMF-1.0")
@@ -35,7 +38,7 @@ print("##")
 symlinks = 0
 
 ### PROCESS ALL FILES AND GET ATTRIBUTES ###
-for file in files:
+for file in s_files:
     result = subprocess.check_output(['stat', file, '-c', '%A,%u,%g,%s,%y'])
     access, user, group, size, mtime = result.decode('utf-8').strip().split(',')
     name = str(file.encode('unicode-escape'))[2:-1]

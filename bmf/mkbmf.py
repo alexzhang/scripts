@@ -3,8 +3,9 @@
 import argparse
 import os
 import subprocess
+import stat
 import sys
-
+from datetime import datetime, timezone
 
 parser = argparse.ArgumentParser()
 parser.add_argument('path', nargs='?', default='.', help='if omitted, uses the current path')
@@ -41,26 +42,32 @@ print(f"## Invoked from: {os.getcwd()}")
 print(f"## Path: {args.path}")
 print("##")
 
-stat_format = "%A\t"
-if not args.no_owner: stat_format += "%u\t"
-if not args.no_group: stat_format += "%g\t"
-stat_format += "%s\t"
-if not args.no_times: stat_format += "%y\t"
-
 ### PROCESS ALL FILES AND GET ATTRIBUTES ###
 for file in s_files:
-    result = subprocess.check_output(['stat', file, '-c', stat_format])
-    stat = result.decode('utf-8').strip()
+    stat_file = os.lstat(file)
+    stat_buf = []
+    if not args.no_perms:
+        stat_buf.append(stat.filemode(stat_file.st_mode))
+    if not args.no_owner:
+        stat_buf.append(str(stat_file.st_uid))
+    if not args.no_group:
+        stat_buf.append(str(stat_file.st_gid))
+    stat_buf.append(str(stat_file.st_size))
+    temp_mtime, temp_mnano = divmod(stat_file.st_mtime_ns, 1_000_000_000)
+    if not args.no_times:
+        stat_buf.append('{}.{:09}Z'.format(
+            datetime.fromtimestamp(temp_mtime, tz=timezone.utc).isoformat().removesuffix('+00:00'),
+            temp_mnano
+        ))
     name = str(file.encode('unicode-escape'))[2:-1]
+    stat_str = '\t'.join(stat_buf)
 
     sha1sum = "NULL"
-    if stat.startswith('d'):
+    if stat.S_ISDIR(stat_file.st_mode):
         sha1sum = "------------------DIR!------------------"
-    elif stat.startswith('l'):
+    elif stat.S_ISLNK(stat_file.st_mode):
         sha1sum = "------------------LINK------------------"
     else:
         sha1sum = subprocess.check_output(['sha1sum', file]).decode('utf-8').split(' ')[0]
 
-    if (args.no_perms):
-        stat = stat.split('\t', 1)[1]
-    print(f"{sha1sum}\t{stat}\t{name}")
+    print(f"{sha1sum}\t{stat_str}\t{name}")
